@@ -83,7 +83,9 @@ h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-
 .p{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
 .p .n{font-weight:800;font-size:17px;min-width:4.5em}
 .p .o{flex:1;font-size:15px}.p .o small{display:block;color:var(--mute);font-size:13px}
-.p .x{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--mute);font-size:20px}
+.p{align-items:flex-start}.p .n{padding-top:8px}.p .pt{padding-top:8px;font-weight:700;white-space:nowrap}
+.oi{display:block;position:relative;padding:8px 0 8px;border-bottom:1px dashed var(--line)}.oi:last-child{border-bottom:0}
+.cx{float:right;margin-top:-30px;min-height:36px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:#d23b1f;font-size:14px;font-weight:700}
 .empty{padding:40px 10px;text-align:center;color:var(--mute)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:12px;border-radius:12px;background:var(--acc-soft);font-size:15px}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:9;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -108,7 +110,7 @@ const FIREBASE_CONFIG = {
 <body>
 <header class="top"><div class="wrap">
   <h1>차한잔 함께 해요</h1>
-  <p class="sub">이름을 적고 메뉴를 누르면 끝. 다른 사람 선택도 바로 보여요.</p>
+  <p class="sub">이름을 적고 메뉴를 누르면 끝. 여러 개 골라도 되고, 다른 사람 선택도 바로 보여요.</p>
   <div class="datebox"><label for="date">주문 날짜</label><input type="date" id="date"><b id="dlabel"></b></div>
   <div class="namebox" id="nb"><label for="name">내 이름</label><input id="name" maxlength="12" placeholder="예: 손예진" autocomplete="off"></div>
   <div class="tabs" role="tablist">
@@ -124,7 +126,7 @@ const FIREBASE_CONFIG = {
   </section>
   <section id="list" class="pane" hidden></section>
 </main>
-<div class="bar" id="bar"><div class="wrap"><div class="t" id="barT"></div><button id="barX" hidden>선택 취소</button></div></div>
+<div class="bar" id="bar"><div class="wrap"><div class="t" id="barT"></div><button id="barX" hidden>내 선택 보기</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
 {
@@ -161,20 +163,22 @@ const me=()=>nameEl.value.trim();
 function find(nm){for(const g of MENU)for(const it of g.items)if(it[0]===nm)return{g,it};return null}
 function desc(o){const x=[];if(o.temp)x.push(o.temp);if(o.shot)x.push("샷추가");if(o.decaf)x.push("디카페인");return x.join(" · ")}
 function priceOf(o){return (Number(o.price)||0)+(o.shot?0.5:0)+(o.decaf?0.5:0)}
-function list(){return Object.values(orders).filter(o=>o&&o.name&&o.item).sort((a,b)=>(a.at||0)-(b.at||0))}
+function list(){return Object.entries(orders).filter(([k,o])=>o&&o.name&&o.item).map(([k,o])=>({...o,_id:k})).sort((a,b)=>(a.at||0)-(b.at||0))}
+function mineList(){const n=me();return n?list().filter(o=>o.name===n):[]}
+function nameCount(arr){const m=new Map();for(const n of arr)m.set(n,(m.get(n)||0)+1);return [...m].map(([n,c])=>c>1?n+" "+c+"잔":n)}
 
 function renderChips(){$("chips").innerHTML=MENU.map(g=>`<button data-go="${g.k}">${esc(g.c)}</button>`).join("")}
 function renderMenu(){
-  const all=list(), mine=orders[idOf(me())];
+  const all=list(), mine=mineList();
   $("menu").innerHTML=MENU.map(g=>`<div class="cat" id="c-${g.k}"><h2>${esc(g.c)}</h2>${g.items.map(it=>{
-    const [ko,en,p,t,cf]=it, who=all.filter(o=>o.item===ko), isOpen=open===ko, isMine=mine&&mine.item===ko;
+    const [ko,en,p,t,cf]=it, who=all.filter(o=>o.item===ko), isOpen=open===ko, isMine=mine.some(o=>o.item===ko);
     let opts="";
     if(isOpen){
       const temps=t==="both"?["ICE","HOT"]:t==="ice"?["ICE"]:t==="hot"?["HOT"]:[];
       opts=`<div class="opts">${temps.length?`<div class="seg">${temps.map(v=>`<button class="${v.toLowerCase()}" data-temp="${v}" aria-pressed="${opt.temp===v}">${v}</button>`).join("")}</div>`:""}
       ${cf?`<div class="seg"><button data-tg="shot" aria-pressed="${!!opt.shot}">샷추가 +500</button><button data-tg="decaf" aria-pressed="${!!opt.decaf}">디카페인 +500</button></div>`:""}
       <input class="memo" id="memo" maxlength="30" placeholder="요청사항 (선택) 예: 덜 달게" value="${esc(opt.memo||"")}">
-      <button class="go" data-pick="${esc(ko)}">${me()?esc(me())+" 님 이걸로 할게요":"이름 적고 선택하기"} · ${won(p+(opt.shot?.5:0)+(opt.decaf?.5:0))}</button></div>`;
+      <button class="go" data-pick="${esc(ko)}">${me()?esc(me())+" 님 이거 추가":"이름 적고 추가하기"} · ${won(p+(opt.shot?.5:0)+(opt.decaf?.5:0))}</button></div>`;
     }
     return `<div class="item${isOpen?" open":""}${isMine?" mine":""}"><button class="row" data-open="${esc(ko)}" aria-expanded="${isOpen}"><span class="nm"><b>${esc(ko)}</b><small>${esc(en)}</small></span>${who.length?`<span class="who">${who.length}명</span>`:""}<span class="price">${won(p)}</span></button>${opts}</div>`;
   }).join("")}</div>`).join("");
@@ -184,10 +188,11 @@ function groups(){
   for(const o of list()){const k=o.item+"|"+desc(o)+"|"+(o.memo||"");if(!m.has(k))m.set(k,{o,names:[]});m.get(k).names.push(o.name)}
   return [...m.values()];
 }
+function people(all){const m=new Map();for(const o of all){if(!m.has(o.name))m.set(o.name,[]);m.get(o.name).push(o)}return [...m]}
 function orderText(){
   const all=list(),di=dayInfo(day);let s=`[주문서] ${di.y}년 ${di.txt} (${DOW[di.w]}) · 총 ${all.length}개\n`;
   for(const g of groups())s+=`- ${g.o.item}${desc(g.o)?" ("+desc(g.o)+")":""}${g.o.memo?" / "+g.o.memo:""} x${g.names.length}\n`;
-  s+="합계 "+won(all.reduce((a,o)=>a+priceOf(o),0))+"\n\n[누가 뭐]\n"+all.map(o=>`${o.name}: ${o.item}${desc(o)?" "+desc(o):""}`).join("\n");
+  s+="합계 "+won(all.reduce((a,o)=>a+priceOf(o),0))+"\n\n[누가 뭐]\n"+people(all).map(([n,os])=>`${n}: ${os.map(o=>o.item+(desc(o)?" "+desc(o):"")).join(", ")}`).join("\n");
   return s;
 }
 function renderList(){
@@ -195,17 +200,18 @@ function renderList(){
   const di=dayInfo(day);
   if(!all.length){$("list").innerHTML=`<div class="empty">${di.txt} ${di.dow}에는 아직 아무도 안 골랐어요.<br>‘메뉴 고르기’에서 먼저 골라보세요.</div>`;return}
   const tot=all.reduce((a,o)=>a+priceOf(o),0);
-  $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="q">×${g.names.length}</span><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}</b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${g.names.map(esc).join(", ")}</small></span></div>`).join("")}
+  $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="q">×${g.names.length}</span><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}</b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${nameCount(g.names).map(esc).join(", ")}</small></span></div>`).join("")}
   <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
   <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
   ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
-  <div class="ppl"><h3>이름별 선택</h3>${all.map(o=>`<div class="p"><span class="n">${esc(o.name)}</span><span class="o">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small></span></div>`).join("")}</div>`;
+  <div class="ppl"><h3>이름별 선택</h3>${people(all).map(([n,os])=>`<div class="p"><span class="n">${esc(n)}</span><span class="o">${os.map(o=>`<span class="oi">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small>${n===me()?`<button class="cx" data-del="${esc(o._id)}">취소</button>`:""}</span>`).join("")}</span><span class="pt">${won(os.reduce((a,o)=>a+priceOf(o),0))}</span></div>`).join("")}</div>`;
 }
 function renderBar(){
-  const o=orders[idOf(me())];
+  const os=mineList();
   if(!me()){$("barT").innerHTML="위에 <b>이름</b>부터 적어주세요";$("barX").hidden=true;return}
-  if(!o){$("barT").innerHTML=`<b>${esc(me())}</b> 님, 메뉴를 골라주세요`;$("barX").hidden=true;return}
-  $("barT").innerHTML=`<b>${esc(me())}</b> · ${esc(o.item)}${desc(o)?" "+esc(desc(o)):""}<br>${won(priceOf(o))}`;$("barX").hidden=false;
+  if(!os.length){$("barT").innerHTML=`<b>${esc(me())}</b> 님, 메뉴를 골라주세요 (여러 개 가능)`;$("barX").hidden=true;return}
+  const f=os[0];
+  $("barT").innerHTML=`<b>${esc(me())}</b> · ${esc(f.item)}${desc(f)?" "+esc(desc(f)):""}${os.length>1?" 외 "+(os.length-1)+"개":""}<br>${won(os.reduce((a,o)=>a+priceOf(o),0))}`;$("barX").hidden=tab==="list";
 }
 function render(){
   $("cnt").textContent=list().length;
@@ -220,7 +226,7 @@ function note(m){$("note").innerHTML=m?`<div class="note">${esc(m)}</div>`:""}
 const KEY=d=>"drink-orders-"+d;
 function persist(){if(!db)ls.set(KEY(day),JSON.stringify(orders))}
 function load(d){try{const v=JSON.parse(ls.get(KEY(d))||"{}");return v&&typeof v==="object"?v:{}}catch(e){return{}}}
-async function save(o){const id=idOf(o.name);orders[id]=o;persist();render();if(col){try{await col.doc(id).set(o)}catch(e){toast(e&&e.code==="permission-denied"?"저장 권한이 없어요 (Firestore 규칙 확인)":"저장 실패, 다시 시도해주세요")}}}
+async function save(o){const id=idOf(o.name)+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);orders[id]=o;persist();render();if(col){try{await col.doc(id).set(o)}catch(e){toast(e&&e.code==="permission-denied"?"저장 권한이 없어요 (Firestore 규칙 확인)":"저장 실패, 다시 시도해주세요")}}}
 async function del(id){delete orders[id];persist();render();if(col){try{await col.doc(id).delete()}catch(e){toast("지우기 실패")}}}
 
 document.addEventListener("click",e=>{
@@ -228,8 +234,8 @@ document.addEventListener("click",e=>{
   if(b.id==="t-pick"||b.id==="t-list"){tab=b.id==="t-pick"?"pick":"list";confirmClear=false;render();return}
   if(b.dataset.go){$("c-"+b.dataset.go).scrollIntoView({behavior:"smooth"});return}
   if(b.dataset.open!==undefined){
-    const nm=b.dataset.open;if(open===nm){open=null}else{open=nm;const f=find(nm),t=f.it[3],mine=orders[idOf(me())];
-      opt=mine&&mine.item===nm?{temp:mine.temp,shot:mine.shot,decaf:mine.decaf,memo:mine.memo}:{temp:t==="both"||t==="ice"?"ICE":t==="hot"?"HOT":""}}
+    const nm=b.dataset.open;if(open===nm){open=null}else{open=nm;const t=find(nm).it[3];
+      opt={temp:t==="both"||t==="ice"?"ICE":t==="hot"?"HOT":""}}
     render();return}
   if(b.dataset.temp){opt.temp=b.dataset.temp;opt.memo=($("memo")||{}).value;render();return}
   if(b.dataset.tg){opt[b.dataset.tg]=!opt[b.dataset.tg];opt.memo=($("memo")||{}).value;render();return}
@@ -237,9 +243,9 @@ document.addEventListener("click",e=>{
     if(!me()){$("nb").classList.add("warn");nameEl.focus();window.scrollTo({top:0,behavior:"smooth"});toast("이름을 먼저 적어주세요");return}
     const f=find(b.dataset.pick);if(!f)return;
     const o={day,name:me(),item:f.it[0],cat:f.g.c,price:f.it[2],temp:opt.temp||"",shot:!!(f.it[4]&&opt.shot),decaf:!!(f.it[4]&&opt.decaf),memo:(($("memo")||{}).value||"").trim(),at:Date.now()};
-    open=null;save(o);toast(o.name+" 님: "+o.item+" 선택!");return}
-  if(b.id==="barX"){del(idOf(me()));toast("선택을 취소했어요");return}
-  if(b.dataset.del){del(b.dataset.del);return}
+    open=null;save(o);toast(o.name+" 님: "+o.item+" 추가!");return}
+  if(b.id==="barX"){tab="list";render();window.scrollTo({top:0});return}
+  if(b.dataset.del){del(b.dataset.del);toast("취소했어요");return}
   if(b.id==="copy"){const txt=orderText();const fb=()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?"주문서를 복사했어요":"복사가 막혔어요")};if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(()=>toast("주문서를 복사했어요"),fb);else fb();return}
   if(b.id==="clr"){confirmClear=true;render();return}
   if(b.id==="clrN"){confirmClear=false;render();return}
@@ -261,7 +267,7 @@ renderChips();renderDate();render();
 function subscribe(){
   if(unsub){unsub();unsub=null}
   orders={};render();
-  clearTimeout(timer);timer=setTimeout(()=>note("함께 보는 목록을 불러오는 중이에요… 잠시만요."),10000);
+  clearTimeout(timer);timer=setTimeout(()=>note("공유 목록에 연결되지 않아요. Firebase 설정값 6개가 정확한지, Firestore 데이터베이스를 만들었는지 확인해주세요."),10000);
   const d=day;
   col=db.collection("days/"+d+"/orders");
   unsub=col.onSnapshot(snap=>{
@@ -270,9 +276,11 @@ function subscribe(){
     orders=next;if(!snap.metadata.fromCache){clearTimeout(timer);note("")}
     if(open&&document.activeElement&&document.activeElement.id==="memo"){$("cnt").textContent=list().length;renderBar();return}
     render();
-  },err=>{clearTimeout(timer);note("목록을 불러오지 못했어요. 페이지를 다시 열어주세요.")});
+  },err=>{clearTimeout(timer);const c=err&&err.code;note(c==="permission-denied"?"Firestore 규칙 때문에 막혔어요. 규칙 탭에 안내한 규칙을 붙여넣고 게시해주세요.":c==="not-found"||c==="failed-precondition"?"Firestore 데이터베이스가 아직 없어요. Firebase에서 Firestore 데이터베이스를 만들어주세요.":"목록을 불러오지 못했어요 ("+(c||"오류")+"). Firebase 설정값을 확인해주세요.")});
 }
 (async()=>{
+  const sample=/xxxx|\.\.\.$/.test(FIREBASE_CONFIG.projectId+FIREBASE_CONFIG.apiKey+FIREBASE_CONFIG.appId);
+  if(sample){orders=load(day);render();note("Firebase 설정값이 예시(drink-xxxx 등) 그대로예요. Firebase 콘솔의 실제 값으로 바꿔주세요. 지금은 이 기기에만 저장돼요.");return}
   try{if(FIREBASE_CONFIG.projectId&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore()}}catch(e){db=null}
   if(!db){orders=load(day);render();note(FIREBASE_CONFIG.projectId?"공유 저장소에 연결하지 못해 이 기기에만 저장돼요. 인터넷 연결을 확인해주세요.":"아직 Firebase 설정 전이라 이 기기에만 저장돼요.");return}
   subscribe();
