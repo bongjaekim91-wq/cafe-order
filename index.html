@@ -99,7 +99,7 @@ h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSy...",
   authDomain: "drink-xxxx.firebaseapp.com",
-  projectId: "drink-4b69b",
+  projectId: "drink-4b69b"",
   storageBucket: "drink-xxxx.firebasestorage.app",
   messagingSenderId: "1234567890",
   appId: "1:1234567890:web:abcd..."
@@ -204,7 +204,7 @@ function renderList(){
   <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
   <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
   ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
-  <div class="ppl"><h3>이름별 선택</h3>${people(all).map(([n,os])=>`<div class="p"><span class="n">${esc(n)}</span><span class="o">${os.map(o=>`<span class="oi">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small>${n===me()?`<button class="cx" data-del="${esc(o._id)}">취소</button>`:""}</span>`).join("")}</span><span class="pt">${won(os.reduce((a,o)=>a+priceOf(o),0))}</span></div>`).join("")}</div>`;
+  <div class="ppl"><h3>이름별 선택</h3>${people(all).map(([n,os])=>`<div class="p"><span class="n">${esc(n)}</span><span class="o">${os.map(o=>`<span class="oi">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small>${n===me()?`<button class="cx" data-del="${esc(o._id)}">취소</button>`:""}</span>`).join("")}</span></div>`).join("")}</div>`;
 }
 function renderBar(){
   const os=mineList();
