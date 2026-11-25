@@ -199,7 +199,7 @@ function renderList(){
   <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
   <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
   ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
-  <div class="ppl"><h3>이름별 선택</h3>${all.map(o=>`<div class="p"><span class="n">${esc(o.name)}</span><span class="o">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small></span><button class="x" data-del="${esc(idOf(o.name))}" aria-label="${esc(o.name)} 선택 지우기">×</button></div>`).join("")}</div>`;
+  <div class="ppl"><h3>이름별 선택</h3>${all.map(o=>`<div class="p"><span class="n">${esc(o.name)}</span><span class="o">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small></span></div>`).join("")}</div>`;
 }
 function renderBar(){
   const o=orders[idOf(me())];
