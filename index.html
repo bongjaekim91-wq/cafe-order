@@ -85,7 +85,9 @@ h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-
 .p .o{flex:1;font-size:15px}.p .o small{display:block;color:var(--mute);font-size:13px}
 .p{align-items:flex-start}.p .n{padding-top:8px}.p .pt{padding-top:8px;font-weight:700;white-space:nowrap}
 .oi{display:block;position:relative;padding:8px 0 8px;border-bottom:1px dashed var(--line)}.oi:last-child{border-bottom:0}
-.cx{float:right;margin-top:-30px;min-height:36px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:#d23b1f;font-size:14px;font-weight:700}
+.own{float:right;margin-top:-30px;display:flex;gap:6px}.cx.ed{color:var(--ink)}
+.conn{margin:22px 0 0;font-size:13px;color:var(--mute)}.conn i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#aaa}.conn.ok i{background:#2bb24c}.conn.error i{background:#d23b1f}.conn.error{color:#d23b1f}
+.cx{min-height:36px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:#d23b1f;font-size:14px;font-weight:700}
 .empty{padding:40px 10px;text-align:center;color:var(--mute)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:12px;border-radius:12px;background:var(--acc-soft);font-size:15px}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:9;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -97,12 +99,12 @@ h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-
 <script>
 /* ▼▼▼ 여기에 Firebase 설정을 붙여넣으세요 (Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정) ▼▼▼ */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSy...",
-  authDomain: "drink-xxxx.firebaseapp.com",
-  projectId: "drink-4b69b"",
-  storageBucket: "drink-xxxx.firebasestorage.app",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcd..."
+  apiKey: "AIzaSyCFu5oFBK9z6SOsYa1pfd56J8ZNUi1NIDQ",
+  authDomain: "drink-4b69b.firebaseapp.com",
+  projectId: "drink-4b69b",
+  storageBucket: "drink-4b69b.firebasestorage.app",
+  messagingSenderId: "105119456926",
+  appId: "1:105119456926:web:411341b1b9e48523ce258f"
 };
 /* ▲▲▲ 여기까지 ▲▲▲ */
 </script>
@@ -159,12 +161,15 @@ function renderDate(){const i=dayInfo(day);$("date").value=day;$("dlabel").inner
 const nameEl=$("name");
 nameEl.value=ls.get("drink-name")||"";
 const me=()=>nameEl.value.trim();
+let DEV=ls.get("drink-dev");if(!DEV){DEV="d"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);ls.set("drink-dev",DEV)}
+const isOwn=o=>o.owner?o.owner===DEV:(!!me()&&o.name===me());
+let editId=null,conn={s:"local",m:""},pend={};
 
 function find(nm){for(const g of MENU)for(const it of g.items)if(it[0]===nm)return{g,it};return null}
 function desc(o){const x=[];if(o.temp)x.push(o.temp);if(o.shot)x.push("샷추가");if(o.decaf)x.push("디카페인");return x.join(" · ")}
 function priceOf(o){return (Number(o.price)||0)+(o.shot?0.5:0)+(o.decaf?0.5:0)}
 function list(){return Object.entries(orders).filter(([k,o])=>o&&o.name&&o.item).map(([k,o])=>({...o,_id:k})).sort((a,b)=>(a.at||0)-(b.at||0))}
-function mineList(){const n=me();return n?list().filter(o=>o.name===n):[]}
+function mineList(){return list().filter(isOwn)}
 function nameCount(arr){const m=new Map();for(const n of arr)m.set(n,(m.get(n)||0)+1);return [...m].map(([n,c])=>c>1?n+" "+c+"잔":n)}
 
 function renderChips(){$("chips").innerHTML=MENU.map(g=>`<button data-go="${g.k}">${esc(g.c)}</button>`).join("")}
@@ -178,7 +183,7 @@ function renderMenu(){
       opts=`<div class="opts">${temps.length?`<div class="seg">${temps.map(v=>`<button class="${v.toLowerCase()}" data-temp="${v}" aria-pressed="${opt.temp===v}">${v}</button>`).join("")}</div>`:""}
       ${cf?`<div class="seg"><button data-tg="shot" aria-pressed="${!!opt.shot}">샷추가 +500</button><button data-tg="decaf" aria-pressed="${!!opt.decaf}">디카페인 +500</button></div>`:""}
       <input class="memo" id="memo" maxlength="30" placeholder="요청사항 (선택) 예: 덜 달게" value="${esc(opt.memo||"")}">
-      <button class="go" data-pick="${esc(ko)}">${me()?esc(me())+" 님 이거 추가":"이름 적고 추가하기"} · ${won(p+(opt.shot?.5:0)+(opt.decaf?.5:0))}</button></div>`;
+      <button class="go" data-pick="${esc(ko)}">${!me()?"이름 적고 추가하기":editId?"이걸로 수정 완료":esc(me())+" 님 이거 추가"} · ${won(p+(opt.shot?.5:0)+(opt.decaf?.5:0))}</button></div>`;
     }
     return `<div class="item${isOpen?" open":""}${isMine?" mine":""}"><button class="row" data-open="${esc(ko)}" aria-expanded="${isOpen}"><span class="nm"><b>${esc(ko)}</b><small>${esc(en)}</small></span>${who.length?`<span class="who">${who.length}명</span>`:""}<span class="price">${won(p)}</span></button>${opts}</div>`;
   }).join("")}</div>`).join("");
@@ -195,18 +200,21 @@ function orderText(){
   s+="합계 "+won(all.reduce((a,o)=>a+priceOf(o),0))+"\n\n[누가 뭐]\n"+people(all).map(([n,os])=>`${n}: ${os.map(o=>o.item+(desc(o)?" "+desc(o):"")).join(", ")}`).join("\n");
   return s;
 }
+function connLine(){const t={local:"이 기기에만 저장 중 (공유 안 됨)",connecting:"공유 저장소에 연결 중…",ok:"공유 저장소에 연결됨 · "+FIREBASE_CONFIG.projectId,error:"공유 저장소 연결 오류"}[conn.s];return `<p class="conn ${conn.s}"><i></i>${esc(t)}${conn.m?" — "+esc(conn.m):""}</p>`}
 function renderList(){
   const all=list();
   const di=dayInfo(day);
-  if(!all.length){$("list").innerHTML=`<div class="empty">${di.txt} ${di.dow}에는 아직 아무도 안 골랐어요.<br>‘메뉴 고르기’에서 먼저 골라보세요.</div>`;return}
+  if(!all.length){$("list").innerHTML=`<div class="empty">${di.txt} ${di.dow}에는 아직 아무도 안 골랐어요.<br>‘메뉴 고르기’에서 먼저 골라보세요.</div>${connLine()}`;return}
   const tot=all.reduce((a,o)=>a+priceOf(o),0);
   $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="q">×${g.names.length}</span><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}</b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${nameCount(g.names).map(esc).join(", ")}</small></span></div>`).join("")}
   <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
   <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
   ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
-  <div class="ppl"><h3>이름별 선택</h3>${people(all).map(([n,os])=>`<div class="p"><span class="n">${esc(n)}</span><span class="o">${os.map(o=>`<span class="oi">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small>${n===me()?`<button class="cx" data-del="${esc(o._id)}">취소</button>`:""}</span>`).join("")}</span></div>`).join("")}</div>`;
+  <div class="ppl"><h3>이름별 선택</h3>${people(all).map(([n,os])=>`<div class="p"><span class="n">${esc(n)}</span><span class="o">${os.map(o=>`<span class="oi">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small>${isOwn(o)?`<span class="own"><button class="cx ed" data-edit="${esc(o._id)}">수정</button><button class="cx" data-del="${esc(o._id)}">삭제</button></span>`:""}</span>`).join("")}</span></div>`).join("")}</div>${connLine()}`;
 }
 function renderBar(){
+  if(editId&&orders[editId]){const e=orders[editId];$("barT").innerHTML=`<b>수정 중</b> · ${esc(e.item)}${desc(e)?" "+esc(desc(e)):""}<br>옵션을 바꾸거나 다른 메뉴를 골라도 돼요`;$("barX").textContent="수정 취소";$("barX").hidden=false;return}
+  $("barX").textContent="내 선택 보기";
   const os=mineList();
   if(!me()){$("barT").innerHTML="위에 <b>이름</b>부터 적어주세요";$("barX").hidden=true;return}
   if(!os.length){$("barT").innerHTML=`<b>${esc(me())}</b> 님, 메뉴를 골라주세요 (여러 개 가능)`;$("barX").hidden=true;return}
@@ -221,17 +229,21 @@ function render(){
   renderBar();
 }
 let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),1800)}
+function errMsg(e){const c=e&&e.code||"";const k={"permission-denied":"Firestore 규칙이 저장을 막고 있어요","not-found":"Firestore 데이터베이스를 찾을 수 없어요","failed-precondition":"Firestore 데이터베이스가 준비되지 않았어요","invalid-argument":"Firebase 설정값(apiKey 등)이 잘못됐어요","unauthenticated":"Firebase 설정값(apiKey)이 잘못됐어요","unavailable":"서버에 연결할 수 없어요 (인터넷 확인)"}[c]||"오류";return k+" ["+(c||"?")+"] "+String(e&&e.message||"").slice(0,120)}
+function setConn(s,m){conn={s,m:m||""};if(s==="error")note("함께 보기가 안 되고 있어요: "+conn.m);else if(s==="ok")note("");if(tab==="list")renderList()}
 function note(m){$("note").innerHTML=m?`<div class="note">${esc(m)}</div>`:""}
 
 const KEY=d=>"drink-orders-"+d;
 function persist(){if(!db)ls.set(KEY(day),JSON.stringify(orders))}
 function load(d){try{const v=JSON.parse(ls.get(KEY(d))||"{}");return v&&typeof v==="object"?v:{}}catch(e){return{}}}
-async function save(o){const id=idOf(o.name)+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);orders[id]=o;persist();render();if(col){try{await col.doc(id).set(o)}catch(e){toast(e&&e.code==="permission-denied"?"저장 권한이 없어요 (Firestore 규칙 확인)":"저장 실패, 다시 시도해주세요")}}}
-async function del(id){delete orders[id];persist();render();if(col){try{await col.doc(id).delete()}catch(e){toast("지우기 실패")}}}
+async function save(o,fixedId){const id=fixedId||idOf(o.name)+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);o.owner=DEV;const prev=orders[id];orders[id]=o;persist();render();
+  if(!col)return;const w=setTimeout(()=>{note("저장이 서버에 반영되지 않고 있어요. 인터넷 연결과 Firebase 설정값을 확인해주세요.")},8000);
+  try{await col.doc(id).set(o);clearTimeout(w)}catch(e){clearTimeout(w);if(prev)orders[id]=prev;else delete orders[id];render();setConn("error",errMsg(e));toast("저장 실패")}}
+async function del(id){const prev=orders[id];delete orders[id];persist();render();if(col){try{await col.doc(id).delete()}catch(e){if(prev)orders[id]=prev;render();setConn("error",errMsg(e));toast("삭제 실패")}}}
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
-  if(b.id==="t-pick"||b.id==="t-list"){tab=b.id==="t-pick"?"pick":"list";confirmClear=false;render();return}
+  if(b.id==="t-pick"||b.id==="t-list"){tab=b.id==="t-pick"?"pick":"list";confirmClear=false;if(tab==="list"){editId=null;open=null}render();return}
   if(b.dataset.go){$("c-"+b.dataset.go).scrollIntoView({behavior:"smooth"});return}
   if(b.dataset.open!==undefined){
     const nm=b.dataset.open;if(open===nm){open=null}else{open=nm;const t=find(nm).it[3];
@@ -243,9 +255,11 @@ document.addEventListener("click",e=>{
     if(!me()){$("nb").classList.add("warn");nameEl.focus();window.scrollTo({top:0,behavior:"smooth"});toast("이름을 먼저 적어주세요");return}
     const f=find(b.dataset.pick);if(!f)return;
     const o={day,name:me(),item:f.it[0],cat:f.g.c,price:f.it[2],temp:opt.temp||"",shot:!!(f.it[4]&&opt.shot),decaf:!!(f.it[4]&&opt.decaf),memo:(($("memo")||{}).value||"").trim(),at:Date.now()};
-    open=null;save(o);toast(o.name+" 님: "+o.item+" 추가!");return}
-  if(b.id==="barX"){tab="list";render();window.scrollTo({top:0});return}
-  if(b.dataset.del){del(b.dataset.del);toast("취소했어요");return}
+    if(editId&&orders[editId]&&isOwn(orders[editId])){const id=editId;o.at=orders[id].at||o.at;editId=null;open=null;save(o,id);toast("수정했어요");return}
+    editId=null;open=null;save(o);toast(o.name+" 님: "+o.item+" 추가!");return}
+  if(b.id==="barX"){if(editId){editId=null;open=null;tab="list"}else tab="list";render();window.scrollTo({top:0});return}
+  if(b.dataset.del){const o=orders[b.dataset.del];if(!o||!isOwn(o))return;del(b.dataset.del);toast("삭제했어요");return}
+  if(b.dataset.edit){const o=orders[b.dataset.edit];if(!o||!isOwn(o))return;editId=b.dataset.edit;tab="pick";open=o.item;opt={temp:o.temp,shot:o.shot,decaf:o.decaf,memo:o.memo};render();const el=document.querySelector(".item.open");if(el)el.scrollIntoView({block:"center"});return}
   if(b.id==="copy"){const txt=orderText();const fb=()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?"주문서를 복사했어요":"복사가 막혔어요")};if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(()=>toast("주문서를 복사했어요"),fb);else fb();return}
   if(b.id==="clr"){confirmClear=true;render();return}
   if(b.id==="clrN"){confirmClear=false;render();return}
@@ -267,21 +281,24 @@ renderChips();renderDate();render();
 function subscribe(){
   if(unsub){unsub();unsub=null}
   orders={};render();
-  clearTimeout(timer);timer=setTimeout(()=>note("공유 목록에 연결되지 않아요. Firebase 설정값 6개가 정확한지, Firestore 데이터베이스를 만들었는지 확인해주세요."),10000);
+  clearTimeout(timer);timer=setTimeout(()=>setConn("error","10초 넘게 서버 응답이 없어요. Firebase 설정값(apiKey, appId)을 확인해주세요."),10000);
   const d=day;
   col=db.collection("days/"+d+"/orders");
-  unsub=col.onSnapshot(snap=>{
+  setConn("connecting");
+  unsub=col.onSnapshot({includeMetadataChanges:true},snap=>{
     if(d!==day)return;
     const next={};for(const d of snap.docs){const v=d.data();if(v)next[d.id]=v}
-    orders=next;if(!snap.metadata.fromCache){clearTimeout(timer);note("")}
+    orders=next;if(!snap.metadata.fromCache&&conn.s!=="ok"){clearTimeout(timer);setConn("ok")}
     if(open&&document.activeElement&&document.activeElement.id==="memo"){$("cnt").textContent=list().length;renderBar();return}
     render();
-  },err=>{clearTimeout(timer);const c=err&&err.code;note(c==="permission-denied"?"Firestore 규칙 때문에 막혔어요. 규칙 탭에 안내한 규칙을 붙여넣고 게시해주세요.":c==="not-found"||c==="failed-precondition"?"Firestore 데이터베이스가 아직 없어요. Firebase에서 Firestore 데이터베이스를 만들어주세요.":"목록을 불러오지 못했어요 ("+(c||"오류")+"). Firebase 설정값을 확인해주세요.")});
+  },err=>{clearTimeout(timer);setConn("error",errMsg(err));const c=err&&err.code;if(0)note(c==="permission-denied"?"Firestore 규칙 때문에 막혔어요. 규칙 탭에 안내한 규칙을 붙여넣고 게시해주세요.":c==="not-found"||c==="failed-precondition"?"Firestore 데이터베이스가 아직 없어요. Firebase에서 Firestore 데이터베이스를 만들어주세요.":"목록을 불러오지 못했어요 ("+(c||"오류")+"). Firebase 설정값을 확인해주세요.")});
 }
 (async()=>{
   const sample=/xxxx|\.\.\.$/.test(FIREBASE_CONFIG.projectId+FIREBASE_CONFIG.apiKey+FIREBASE_CONFIG.appId);
   if(sample){orders=load(day);render();note("Firebase 설정값이 예시(drink-xxxx 등) 그대로예요. Firebase 콘솔의 실제 값으로 바꿔주세요. 지금은 이 기기에만 저장돼요.");return}
-  try{if(FIREBASE_CONFIG.projectId&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore()}}catch(e){db=null}
+  if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.appId){orders=load(day);render();note("Firebase 설정의 apiKey와 appId가 비어 있어요. 이 두 값을 넣어야 함께 볼 수 있어요. 지금은 이 기기에만 저장돼요.");return}
+  if(!window.firebase){orders=load(day);render();setConn("error","Firebase 프로그램을 불러오지 못했어요 (인터넷 확인)");return}
+  try{if(FIREBASE_CONFIG.projectId&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore()}}catch(e){db=null;setConn("error",errMsg(e))}
   if(!db){orders=load(day);render();note(FIREBASE_CONFIG.projectId?"공유 저장소에 연결하지 못해 이 기기에만 저장돼요. 인터넷 연결을 확인해주세요.":"아직 Firebase 설정 전이라 이 기기에만 저장돼요.");return}
   subscribe();
 })();
