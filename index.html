@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>같이 음료 고르기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 친근하고 빠른 카페 주문 도구, 군더더기 없이
+   IDEA: 카운터에 내미는 주문 전표 — 이름 한 줄, 음료 한 줄
+   PICTURE: 메뉴 목록 자체가 그림; 현황은 영수증처럼 묶인 주문서
+   COLOUR and TYPE: 에스프레소 브라운 + 흰 종이 + 시트러스 오렌지 / Gothic A1 + Noto Sans KR
+   LAYOUT: 위 이름 띠, 탭 두 개, 한 칼럼 목록, 아래 고정된 내 선택 바 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#16100c);--paper:light-dark(#f6f2ee,#211812);--ink:light-dark(#1d140f,#f4ece5);
+--mute:light-dark(#76665b,#b3a497);--line:light-dark(#e6ddd5,#3a2c22);--brew:#2a1a12;--brew-ink:#fff6ee;
+--acc:#ff6a2b;--acc-ink:#fff;--acc-soft:light-dark(#fff0e8,#3b2216)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip;padding-bottom:96px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.top{background:var(--brew);color:var(--brew-ink);padding:22px max(5vw,16px) 0}
+.wrap{max-width:720px;margin:0 auto}
+h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-wrap:balance}
+.sub{margin:0 0 16px;color:#d8c6b8;font-size:14px}
+.datebox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.datebox label{font-weight:700;font-size:14px;color:#f3d9c6;white-space:nowrap;padding-left:14px}
+.datebox input{min-height:44px;border:0;border-radius:12px;background:#fff1;color:#fff;font-size:16px;font-weight:700;padding:0 12px;color-scheme:dark}
+.datebox b{font:800 18px/1 "Gothic A1",sans-serif;color:#fff;white-space:nowrap}
+.datebox b .dow{display:inline-block;margin-left:6px;padding:4px 9px;border-radius:10px;background:var(--acc);font-size:14px}
+.datebox b .dow.sun{background:#e0442a}.datebox b .dow.sat{background:#2a8de0}
+.namebox{display:flex;gap:8px;align-items:center;background:#fff1;border-radius:14px;padding:6px 6px 6px 14px}
+.namebox label{font-weight:700;font-size:14px;white-space:nowrap;color:#f3d9c6}
+.namebox input{flex:1;background:transparent;border:0;font-size:18px;font-weight:700;color:#fff;padding:10px 4px;outline:0}
+.namebox input::placeholder{color:#c9b3a3;font-weight:500}
+.namebox.warn{box-shadow:0 0 0 3px var(--acc)}
+.tabs{display:flex;gap:4px;margin-top:16px}
+.tabs button{flex:1;min-height:48px;border:0;border-radius:12px 12px 0 0;background:transparent;color:#d8c6b8;font-weight:700;font-size:16px}
+.tabs button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+.cnt{display:inline-block;min-width:22px;padding:0 7px;margin-left:6px;border-radius:11px;background:var(--acc);color:#fff;font-size:13px;line-height:22px}
+.note{margin:12px max(5vw,16px) 0;padding:10px 14px;border-radius:10px;background:var(--acc-soft);font-size:14px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px max(5vw,16px);position:sticky;top:0;background:var(--bg);z-index:3;border-bottom:1px solid var(--line);scrollbar-width:none}
+.chips button{flex:none;min-height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--line);background:var(--bg);font-size:14px;font-weight:500;white-space:nowrap}
+.pane{padding:4px max(5vw,16px) 24px}
+.cat{scroll-margin-top:70px}
+.cat h2{font:800 15px/1 "Gothic A1",sans-serif;margin:26px 0 6px;color:var(--mute);letter-spacing:.02em}
+.item{border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:10px 4px;border:0;background:transparent;text-align:left}
+.row .nm{flex:1}
+.row b{display:block;font-size:17px;font-weight:700}
+.row small{display:block;color:var(--mute);font-size:13px}
+.price{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.who{flex:none;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--paper);color:var(--mute);white-space:nowrap}
+.item.mine .row b::after{content:" ✓";color:var(--acc)}
+.item.open{background:var(--paper);border-radius:14px;border-color:transparent;margin:4px -8px;padding:0 8px}
+.opts{padding:2px 4px 16px;display:grid;gap:12px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-weight:700}
+.seg button[aria-pressed=true]{border-color:var(--acc);background:var(--acc-soft);color:var(--ink)}
+.seg .hot[aria-pressed=true]{border-color:#e0442a}.seg .ice[aria-pressed=true]{border-color:#2a8de0;background:light-dark(#e9f4ff,#13263a)}
+.memo{width:100%;min-height:44px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--bg);font-size:16px}
+.go{min-height:52px;border:0;border-radius:14px;background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:17px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--brew);color:var(--brew-ink);padding:12px max(5vw,16px) calc(12px + env(safe-area-inset-bottom))}
+.bar .wrap{display:flex;align-items:center;gap:12px}
+.bar .t{flex:1;font-size:15px;line-height:1.35}
+.bar .t b{font-size:17px}
+.bar button{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid #fff4;background:transparent;color:#fff;font-weight:700;white-space:nowrap}
+.sum{background:var(--paper);border-radius:18px;padding:18px;margin-top:16px}
+.sum h3{margin:0 0 10px;font:800 20px/1.2 "Gothic A1",sans-serif}
+.line{display:flex;gap:10px;align-items:baseline;padding:10px 0;border-top:1px dashed var(--line)}
+.line:first-of-type{border-top:0}
+.line .q{font:800 22px/1 "Gothic A1",sans-serif;color:var(--acc);min-width:44px}
+.line .d{flex:1}.line .d b{display:block}.line .d small{color:var(--mute);font-size:13px}
+.total{display:flex;justify-content:space-between;font-weight:800;font-size:18px;padding-top:12px;border-top:2px solid var(--ink);margin-top:6px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-weight:700}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{color:#d23b1f}
+.ppl h3{margin:26px 0 4px;font:800 18px/1.2 "Gothic A1",sans-serif}
+.p{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.p .n{font-weight:800;font-size:17px;min-width:4.5em}
+.p .o{flex:1;font-size:15px}.p .o small{display:block;color:var(--mute);font-size:13px}
+.p .x{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--mute);font-size:20px}
+.empty{padding:40px 10px;text-align:center;color:var(--mute)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:12px;border-radius:12px;background:var(--acc-soft);font-size:15px}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:9;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ▼▼▼ 여기에 Firebase 설정을 붙여넣으세요 (Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정) ▼▼▼ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSy...",
+  authDomain: "drink-xxxx.firebaseapp.com",
+  projectId: "drink-xxxx",
+  storageBucket: "drink-xxxx.firebasestorage.app",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcd..."
+};
+/* ▲▲▲ 여기까지 ▲▲▲ */
+</script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>같이 음료 고르기</h1>
+  <p class="sub">이름을 적고 메뉴를 누르면 끝. 다른 사람 선택도 바로 보여요.</p>
+  <div class="datebox"><label for="date">주문 날짜</label><input type="date" id="date"><b id="dlabel"></b></div>
+  <div class="namebox" id="nb"><label for="name">내 이름</label><input id="name" maxlength="12" placeholder="예: 김민지" autocomplete="off"></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-pick" aria-selected="true">메뉴 고르기</button>
+    <button role="tab" id="t-list" aria-selected="false">주문 현황<span class="cnt" id="cnt">0</span></button>
+  </div>
+</div></header>
+<div id="note"></div>
+<main class="wrap">
+  <section id="pick">
+    <nav class="chips" id="chips"></nav>
+    <div class="pane" id="menu"></div>
+  </section>
+  <section id="list" class="pane" hidden></section>
+</main>
+<div class="bar" id="bar"><div class="wrap"><div class="t" id="barT"></div><button id="barX" hidden>선택 취소</button></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+{
+const MENU=[
+ {c:"시그니처",k:"sig",items:[["시트러스","Citrus · 오렌지+레몬 생과일 쥬스",4.9,"ice"],["알렉산더 크림커피","Alexander Cream · 달콤한 초코크림",4.9,"both",1]]},
+ {c:"크림",k:"crm",items:[["라빠나","La Panna · 크림우유 위 수제크림",6.5,"both",1],["그라노","Grano · 고소함과 달달함 두 배",6.5,"both",1]]},
+ {c:"커피",k:"cof",items:[["아메리카노","Americano",3.8,"both",1],["롱블랙","Long Black",3.8,"both",1]]},
+ {c:"라떼",k:"lat",items:[["카페 라떼","Caffe Latte",4.4,"both",1],["플랫 화이트","Flat White",4.4,"both",1],["바닐라 라떼","Vanilla Latte",4.9,"both",1],["너티 라떼","Nutty Latte",4.9,"both",1],["카페 모카","Caffe Mocha",4.9,"both",1],["카라멜 마끼아또","Caramel Macchiato",4.9,"both",1]]},
+ {c:"에스프레소",k:"esp",items:[["에스프레소","Espresso",3.8,"hot",1],["리스트레또","Ristretto",3.8,"hot",1],["콘파나","Con Panna",4.0,"hot",1],["피에노","Pieno",4.0,"hot",1],["로마노","Romano",4.0,"hot",1]]},
+ {c:"논커피",k:"non",items:[["초코 라떼","Chocolate Latte",4.9,"both"],["녹차 라떼","Greentea Latte",4.9,"both"],["토피넛 라떼","Toffee Latte",4.9,"both"],["미숫가루","Roasted Grain · 아이스만",4.9,"ice"],["밀크티","Milk Tea",4.9,"both"],["율무차","Yulmucha",4.2,"both"],["피스타치오초코","Pistachio Choco",5.9,"both"]]},
+ {c:"생과일 쥬스",k:"sqz",items:[["오렌지","Orange · 100% 생과일",4.9,"ice"],["자몽","Grapefruit · 100% 생과일",4.9,"ice"],["트리플","오렌지+자몽+레몬",4.9,"ice"],["레몬에이드","Lemonade",4.9,"ice"]]},
+ {c:"시즌 과일",k:"ssn",items:[["홍시라떼","Persimmon Latte",5.9,"ice"],["아보카도바나나","Avocado & Banana",5.9,"ice"],["샤인머스캣&레몬","Shinemuscat & Lemon",5.9,"ice"]]},
+ {c:"티",k:"tea",items:[["뱅쇼","Vin Chaud",5.9,"both"],["얼그레이","Earl Gray",4.2,"both"],["페퍼민트","Peppermint",4.2,"both"],["캐모마일","Chamomile",4.2,"both"],["히비스커스","Hibiscus",4.2,"both"],["유자차","Yuja",4.2,"both"],["청귤차","Green Tangerine Tea",4.2,"both"]]},
+ {c:"디저트",k:"des",items:[["마카롱","Macaron",2.7,"none"],["샌드위치","Sandwich",3.9,"none"],["쿠키","Cookie",3.5,"none"],["브라우니","Brownie",4.0,"none"]]}
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const won=p=>Math.round(p*1000).toLocaleString("ko-KR")+"원";
+const idOf=n=>"p_"+Array.from(n).map(c=>c.codePointAt(0).toString(36)).join("-");
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+let orders={}, open=null, opt={}, tab="pick", confirmClear=false, db=null, col=null;
+const DOW=["일","월","화","수","목","금","토"];
+const pad=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+const fromHash=()=>{const m=/^#d-(\d{4}-\d{2}-\d{2})$/.exec(location.hash);return m?m[1]:null};
+let day=fromHash()||today();
+function dayInfo(s){const [y,m,d]=s.split("-").map(Number);const w=new Date(y,m-1,d).getDay();return{y,m,d,w,txt:`${m}월 ${d}일`,dow:DOW[w]+"요일"}}
+function renderDate(){const i=dayInfo(day);$("date").value=day;$("dlabel").innerHTML=`${i.y}년 ${i.txt}<span class="dow${i.w===0?" sun":i.w===6?" sat":""}">${i.dow}</span>`}
+const nameEl=$("name");
+nameEl.value=ls.get("drink-name")||"";
+const me=()=>nameEl.value.trim();
+
+function find(nm){for(const g of MENU)for(const it of g.items)if(it[0]===nm)return{g,it};return null}
+function desc(o){const x=[];if(o.temp)x.push(o.temp);if(o.shot)x.push("샷추가");if(o.decaf)x.push("디카페인");return x.join(" · ")}
+function priceOf(o){return (Number(o.price)||0)+(o.shot?0.5:0)+(o.decaf?0.5:0)}
+function list(){return Object.values(orders).filter(o=>o&&o.name&&o.item).sort((a,b)=>(a.at||0)-(b.at||0))}
+
+function renderChips(){$("chips").innerHTML=MENU.map(g=>`<button data-go="${g.k}">${esc(g.c)}</button>`).join("")}
+function renderMenu(){
+  const all=list(), mine=orders[idOf(me())];
+  $("menu").innerHTML=MENU.map(g=>`<div class="cat" id="c-${g.k}"><h2>${esc(g.c)}</h2>${g.items.map(it=>{
+    const [ko,en,p,t,cf]=it, who=all.filter(o=>o.item===ko), isOpen=open===ko, isMine=mine&&mine.item===ko;
+    let opts="";
+    if(isOpen){
+      const temps=t==="both"?["ICE","HOT"]:t==="ice"?["ICE"]:t==="hot"?["HOT"]:[];
+      opts=`<div class="opts">${temps.length?`<div class="seg">${temps.map(v=>`<button class="${v.toLowerCase()}" data-temp="${v}" aria-pressed="${opt.temp===v}">${v}</button>`).join("")}</div>`:""}
+      ${cf?`<div class="seg"><button data-tg="shot" aria-pressed="${!!opt.shot}">샷추가 +500</button><button data-tg="decaf" aria-pressed="${!!opt.decaf}">디카페인 +500</button></div>`:""}
+      <input class="memo" id="memo" maxlength="30" placeholder="요청사항 (선택) 예: 덜 달게" value="${esc(opt.memo||"")}">
+      <button class="go" data-pick="${esc(ko)}">${me()?esc(me())+" 님 이걸로 할게요":"이름 적고 선택하기"} · ${won(p+(opt.shot?.5:0)+(opt.decaf?.5:0))}</button></div>`;
+    }
+    return `<div class="item${isOpen?" open":""}${isMine?" mine":""}"><button class="row" data-open="${esc(ko)}" aria-expanded="${isOpen}"><span class="nm"><b>${esc(ko)}</b><small>${esc(en)}</small></span>${who.length?`<span class="who">${who.length}명</span>`:""}<span class="price">${won(p)}</span></button>${opts}</div>`;
+  }).join("")}</div>`).join("");
+}
+function groups(){
+  const m=new Map();
+  for(const o of list()){const k=o.item+"|"+desc(o)+"|"+(o.memo||"");if(!m.has(k))m.set(k,{o,names:[]});m.get(k).names.push(o.name)}
+  return [...m.values()];
+}
+function orderText(){
+  const all=list(),di=dayInfo(day);let s=`[주문서] ${di.y}년 ${di.txt} (${DOW[di.w]}) · 총 ${all.length}개\n`;
+  for(const g of groups())s+=`- ${g.o.item}${desc(g.o)?" ("+desc(g.o)+")":""}${g.o.memo?" / "+g.o.memo:""} x${g.names.length}\n`;
+  s+="합계 "+won(all.reduce((a,o)=>a+priceOf(o),0))+"\n\n[누가 뭐]\n"+all.map(o=>`${o.name}: ${o.item}${desc(o)?" "+desc(o):""}`).join("\n");
+  return s;
+}
+function renderList(){
+  const all=list();
+  const di=dayInfo(day);
+  if(!all.length){$("list").innerHTML=`<div class="empty">${di.txt} ${di.dow}에는 아직 아무도 안 골랐어요.<br>‘메뉴 고르기’에서 먼저 골라보세요.</div>`;return}
+  const tot=all.reduce((a,o)=>a+priceOf(o),0);
+  $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="q">×${g.names.length}</span><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}</b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${g.names.map(esc).join(", ")}</small></span></div>`).join("")}
+  <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
+  <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
+  ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
+  <div class="ppl"><h3>이름별 선택</h3>${all.map(o=>`<div class="p"><span class="n">${esc(o.name)}</span><span class="o">${esc(o.item)}${desc(o)?" · "+esc(desc(o)):""}<small>${o.memo?esc(o.memo)+" · ":""}${won(priceOf(o))}</small></span><button class="x" data-del="${esc(idOf(o.name))}" aria-label="${esc(o.name)} 선택 지우기">×</button></div>`).join("")}</div>`;
+}
+function renderBar(){
+  const o=orders[idOf(me())];
+  if(!me()){$("barT").innerHTML="위에 <b>이름</b>부터 적어주세요";$("barX").hidden=true;return}
+  if(!o){$("barT").innerHTML=`<b>${esc(me())}</b> 님, 메뉴를 골라주세요`;$("barX").hidden=true;return}
+  $("barT").innerHTML=`<b>${esc(me())}</b> · ${esc(o.item)}${desc(o)?" "+esc(desc(o)):""}<br>${won(priceOf(o))}`;$("barX").hidden=false;
+}
+function render(){
+  $("cnt").textContent=list().length;
+  $("t-pick").setAttribute("aria-selected",tab==="pick");$("t-list").setAttribute("aria-selected",tab==="list");
+  $("pick").hidden=tab!=="pick";$("list").hidden=tab!=="list";
+  if(tab==="pick")renderMenu();else renderList();
+  renderBar();
+}
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),1800)}
+function note(m){$("note").innerHTML=m?`<div class="note">${esc(m)}</div>`:""}
+
+const KEY=d=>"drink-orders-"+d;
+function persist(){if(!db)ls.set(KEY(day),JSON.stringify(orders))}
+function load(d){try{const v=JSON.parse(ls.get(KEY(d))||"{}");return v&&typeof v==="object"?v:{}}catch(e){return{}}}
+async function save(o){const id=idOf(o.name);orders[id]=o;persist();render();if(col){try{await col.doc(id).set(o)}catch(e){toast(e&&e.code==="permission-denied"?"저장 권한이 없어요 (Firestore 규칙 확인)":"저장 실패, 다시 시도해주세요")}}}
+async function del(id){delete orders[id];persist();render();if(col){try{await col.doc(id).delete()}catch(e){toast("지우기 실패")}}}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="t-pick"||b.id==="t-list"){tab=b.id==="t-pick"?"pick":"list";confirmClear=false;render();return}
+  if(b.dataset.go){$("c-"+b.dataset.go).scrollIntoView({behavior:"smooth"});return}
+  if(b.dataset.open!==undefined){
+    const nm=b.dataset.open;if(open===nm){open=null}else{open=nm;const f=find(nm),t=f.it[3],mine=orders[idOf(me())];
+      opt=mine&&mine.item===nm?{temp:mine.temp,shot:mine.shot,decaf:mine.decaf,memo:mine.memo}:{temp:t==="both"||t==="ice"?"ICE":t==="hot"?"HOT":""}}
+    render();return}
+  if(b.dataset.temp){opt.temp=b.dataset.temp;opt.memo=($("memo")||{}).value;render();return}
+  if(b.dataset.tg){opt[b.dataset.tg]=!opt[b.dataset.tg];opt.memo=($("memo")||{}).value;render();return}
+  if(b.dataset.pick){
+    if(!me()){$("nb").classList.add("warn");nameEl.focus();window.scrollTo({top:0,behavior:"smooth"});toast("이름을 먼저 적어주세요");return}
+    const f=find(b.dataset.pick);if(!f)return;
+    const o={day,name:me(),item:f.it[0],cat:f.g.c,price:f.it[2],temp:opt.temp||"",shot:!!(f.it[4]&&opt.shot),decaf:!!(f.it[4]&&opt.decaf),memo:(($("memo")||{}).value||"").trim(),at:Date.now()};
+    open=null;save(o);toast(o.name+" 님: "+o.item+" 선택!");return}
+  if(b.id==="barX"){del(idOf(me()));toast("선택을 취소했어요");return}
+  if(b.dataset.del){del(b.dataset.del);return}
+  if(b.id==="copy"){const txt=orderText();const fb=()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?"주문서를 복사했어요":"복사가 막혔어요")};if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(()=>toast("주문서를 복사했어요"),fb);else fb();return}
+  if(b.id==="clr"){confirmClear=true;render();return}
+  if(b.id==="clrN"){confirmClear=false;render();return}
+  if(b.id==="clrY"){confirmClear=false;for(const id of Object.keys(orders))del(id);toast("모두 비웠어요");return}
+});
+nameEl.addEventListener("input",()=>{ls.set("drink-name",me());$("nb").classList.remove("warn");if(tab==="pick"&&open)return renderBar();render()});
+
+let unsub=null,timer=null;
+function setDay(s){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||s===day)return;
+  day=s;if(!db)orders=load(s);open=null;confirmClear=false;renderDate();
+  try{history.replaceState(null,"","#d-"+s)}catch(e){}
+  if(db)subscribe();else render();
+}
+$("date").addEventListener("change",e=>{if(e.target.value)setDay(e.target.value)});
+window.addEventListener("hashchange",()=>{const h=fromHash();if(h&&h!==day)setDay(h)});
+renderChips();renderDate();render();
+
+function subscribe(){
+  if(unsub){unsub();unsub=null}
+  orders={};render();
+  clearTimeout(timer);timer=setTimeout(()=>note("함께 보는 목록을 불러오는 중이에요… 잠시만요."),10000);
+  const d=day;
+  col=db.collection("days/"+d+"/orders");
+  unsub=col.onSnapshot(snap=>{
+    if(d!==day)return;
+    const next={};for(const d of snap.docs){const v=d.data();if(v)next[d.id]=v}
+    orders=next;if(!snap.metadata.fromCache){clearTimeout(timer);note("")}
+    if(open&&document.activeElement&&document.activeElement.id==="memo"){$("cnt").textContent=list().length;renderBar();return}
+    render();
+  },err=>{clearTimeout(timer);note("목록을 불러오지 못했어요. 페이지를 다시 열어주세요.")});
+}
+(async()=>{
+  try{if(FIREBASE_CONFIG.projectId&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore()}}catch(e){db=null}
+  if(!db){orders=load(day);render();note(FIREBASE_CONFIG.projectId?"공유 저장소에 연결하지 못해 이 기기에만 저장돼요. 인터넷 연결을 확인해주세요.":"아직 Firebase 설정 전이라 이 기기에만 저장돼요.");return}
+  subscribe();
+})();
+}
+</script>
+</body>
+</html>
