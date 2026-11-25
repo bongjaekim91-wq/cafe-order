@@ -72,7 +72,7 @@ h1{font:800 clamp(26px,6vw,34px)/1.1 "Gothic A1",sans-serif;margin:0 0 4px;text-
 .sum h3{margin:0 0 10px;font:800 20px/1.2 "Gothic A1",sans-serif}
 .line{display:flex;gap:10px;align-items:baseline;padding:10px 0;border-top:1px dashed var(--line)}
 .line:first-of-type{border-top:0}
-.line .q{font:800 22px/1 "Gothic A1",sans-serif;color:var(--acc);min-width:44px}
+.line .q{margin-left:10px;font:800 20px/1 "Gothic A1",sans-serif;color:var(--acc);white-space:nowrap}
 .line .d{flex:1}.line .d b{display:block}.line .d small{color:var(--mute);font-size:13px}
 .total{display:flex;justify-content:space-between;font-weight:800;font-size:18px;padding-top:12px;border-top:2px solid var(--ink);margin-top:6px}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
@@ -196,7 +196,7 @@ function groups(){
 function people(all){const m=new Map();for(const o of all){if(!m.has(o.name))m.set(o.name,[]);m.get(o.name).push(o)}return [...m]}
 function orderText(){
   const all=list(),di=dayInfo(day);let s=`[주문서] ${di.y}년 ${di.txt} (${DOW[di.w]}) · 총 ${all.length}개\n`;
-  for(const g of groups())s+=`- ${g.o.item}${desc(g.o)?" ("+desc(g.o)+")":""}${g.o.memo?" / "+g.o.memo:""} x${g.names.length}\n`;
+  for(const g of groups())s+=`- ${g.o.item}${desc(g.o)?" ("+desc(g.o)+")":""}${g.o.memo?" / "+g.o.memo:""} × ${g.names.length}\n`;
   s+="합계 "+won(all.reduce((a,o)=>a+priceOf(o),0))+"\n\n[누가 뭐]\n"+people(all).map(([n,os])=>`${n}: ${os.map(o=>o.item+(desc(o)?" "+desc(o):"")).join(", ")}`).join("\n");
   return s;
 }
@@ -206,7 +206,7 @@ function renderList(){
   const di=dayInfo(day);
   if(!all.length){$("list").innerHTML=`<div class="empty">${di.txt} ${di.dow}에는 아직 아무도 안 골랐어요.<br>‘메뉴 고르기’에서 먼저 골라보세요.</div>${connLine()}`;return}
   const tot=all.reduce((a,o)=>a+priceOf(o),0);
-  $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="q">×${g.names.length}</span><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}</b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${nameCount(g.names).map(esc).join(", ")}</small></span></div>`).join("")}
+  $("list").innerHTML=`<div class="sum"><h3>${di.txt} ${di.dow} 주문</h3>${groups().map(g=>`<div class="line"><span class="d"><b>${esc(g.o.item)}${desc(g.o)?" · "+esc(desc(g.o)):""}<span class="q">× ${g.names.length}</span></b><small>${g.o.memo?esc(g.o.memo)+" — ":""}${nameCount(g.names).map(esc).join(", ")}</small></span></div>`).join("")}
   <div class="total"><span>총 ${all.length}개</span><span>${won(tot)}</span></div>
   <div class="acts"><button class="btn pri" id="copy">주문서 복사</button><button class="btn danger" id="clr">전체 비우기</button></div>
   ${confirmClear?`<div class="confirm">모든 사람의 선택을 지울까요?<button class="btn danger" id="clrY">네, 비우기</button><button class="btn" id="clrN">아니요</button></div>`:""}</div>
